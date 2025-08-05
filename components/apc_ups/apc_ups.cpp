@@ -9,7 +9,8 @@ static const char *const TAG = "apc_ups";
 void ApcUps::setup() {
   this->state_ = STATE_IDLE;
   this->command_start_millis_ = 0;
-  this->add_polling_command_("Y", POLLING_Y);
+  //this->add_polling_command_("Y", POLLING_Y);
+  this->add_polling_command_("Q1\r", POLLING_Y);
 }
 
 void ApcUps::empty_uart_buffer_() {
