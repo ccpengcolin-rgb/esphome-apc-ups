@@ -1,7 +1,6 @@
 substitutions:
-  name: apc-ups
+  name: esp8266-ups-ali
   device_description: "Monitor and control a APC UPS via RS232"
-  external_components_source: github://syssi/esphome-apc-ups@main
   tx_pin: GPIO4
   rx_pin: GPIO5
 
@@ -10,33 +9,34 @@ esphome:
   comment: ${device_description}
   min_version: 2024.6.0
   project:
-    name: "syssi.esphome-apc-ups"
+    name: "colin.esphome-apc-ups"
     version: 1.1.0
 
 esp8266:
   board: d1_mini
 
 external_components:
-  - source: ${external_components_source}
-    refresh: 0s
+  - source: github://ccpengcolin-rgb/esphome-apc-ups
+    components: [apc_ups]
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
 ota:
-  platform: esphome
+  - platform: esphome
+    password: "793b789912cdcf28f34d83f67f8764cc"
+
+web_server:
+  port: 80
 
 logger:
+  baud_rate: 0 # 禁用UART日志以避免干扰UPS通信
 
 # If you don't use Home Assistant please remove this `api` section and uncomment the `mqtt` component!
 api:
-
-# mqtt:
-#   broker: !secret mqtt_host
-#   username: !secret mqtt_username
-#   password: !secret mqtt_password
-#   id: mqtt_client
+  encryption:
+    key: "XpCbGDHibA4439rW5+pZVolROuOfrjxFeDzXqvU9aDo="
 
 uart:
   - id: uart_0
@@ -52,98 +52,52 @@ uart:
         - lambda: UARTDebug::log_string(direction, bytes);
 
 apc_ups:
-  - id: ups0
+  - id: apc_ups1
     uart_id: uart_0
+    update_interval: 60s
 
-binary_sensor:
-  - platform: apc_ups
-    apc_ups_id: ups0
-    runtime_calibration:
-      name: "${name} runtime calibration"
-    smart_trim:
-      name: "${name} smart trim"
-    smart_boost:
-      name: "${name} smart boost"
-    on_line:
-      name: "${name} on line"
-    on_battery:
-      name: "${name} on battery"
-    output_overloaded:
-      name: "${name} output overloaded"
-    battery_low:
-      name: "${name} battery low"
-    replace_battery:
-      name: "${name} replace battery"
-    smart_mode:
-      name: "${name} smart mode"
-
-switch:
-  - platform: apc_ups
-    apc_ups_id: ups0
-    front_panel_test:
-      name: "${name} front panel test"
-    simulate_power_failure:
-      name: "${name} simulate power failure"
-    self_test:
-      name: "${name} self test"
-    start_runtime_calibration:
-      name: "${name} start runtime calibration"
-
+# Q2命令相关数值传感器
 sensor:
   - platform: apc_ups
-    apc_ups_id: ups0
-    battery_voltage:
-      name: "${name} battery voltage"
-    grid_frequency:
-      name: "${name} grid frequency"
-    grid_voltage:
-      name: "${name} grid voltage"
-    ac_output_voltage:
-      name: "${name} ac output voltage"
-    ac_output_load:
-      name: "${name} ac output load"
-    status_bitmask:
-      name: "${name} status bitmask"
-    state_of_charge:
-      name: "${name} state of charge"
-    estimated_runtime:
-      name: "${name} estimated runtime"
-    internal_temperature:
-      name: "${name} internal temperature"
-    ambient_temperature:
-      name: "${name} ambient temperature"
-    max_grid_voltage:
-      name: "${name} max grid voltage"
-    min_grid_voltage:
-      name: "${name} min grid voltage"
-    nominal_battery_voltage:
-      name: "${name} nominal battery voltage"
-    nominal_output_voltage:
-      name: "${name} nominal output voltage"
+    apc_ups_id: apc_ups1
+    ups101:
+      name: "UPS101 Line Voltage"
+    ups102:
+      name: "UPS102 Line Frequency"
+    ups103:
+      name: "UPS103 Output Voltage"
+    ups104:
+      name: "UPS104 Output Current"
+    ups105:
+      name: "UPS105 Output Power"
+    ups106:
+      name: "UPS106 Battery Voltage"
+    ups107:
+      name: "UPS107 Battery Temperature"
+    ups113:
+      name: "UPS113 Load Percentage"
+    ups114:
+      name: "UPS114 Battery Capacity"
+    ups115:
+      name: "UPS115 Estimated Runtime"
+    ups116:
+      name: "UPS116 Input Voltage"
+    ups117:
+      name: "UPS117 Output Voltage 2"
+    ups118:
+      name: "UPS118 Unknown"
 
-text_sensor:
+# Q2命令相关二进制传感器
+binary_sensor:
   - platform: apc_ups
-    apc_ups_id: ups0
-    cause_of_last_transfer:
-      name: "${name} cause of last transfer"
-    # Could cause a connection reset of the Home Assistant API connection
-    # See https://github.com/syssi/esphome-apc-ups/issues/1
-    #
-    # protocol_info:
-    #   name: "${name} protocol info"
-    firmware_revision:
-      name: "${name} firmware revision"
-    old_firmware_version:
-      name: "${name} old firmware version"
-    manufacture_date:
-      name: "${name} manufacture date"
-    last_battery_change_date:
-      name: "${name} last battery change date"
-    local_identifier:
-      name: "${name} local identifier"
-    serial_number:
-      name: "${name} serial number"
-    self_test_results:
-      name: "${name} self test results"
-    model_name:
-      name: "${name} model name"
+    apc_ups_id: apc_ups1
+    ups108:
+      name: "UPS108 Utility Fail"
+    ups109:
+      name: "UPS109 Battery Low"
+    ups110:
+      name: "UPS110 Overload"
+    ups111:
+      name: "UPS111 Fault"
+    ups112:
+      name: "UPS112 Test In Progress"
