@@ -12,7 +12,7 @@ namespace esphome {
 namespace apc_ups {
 
 // Buffer size for reading UPS responses
-#define APC_UPS_READ_BUFFER_LENGTH 256
+static const size_t APC_UPS_READ_BUFFER_LENGTH = 256;
 
 enum ENUMPollingCommand {
   POLLING_Y = 0,         // Enable smart mode
@@ -193,7 +193,7 @@ class ApcUps : public uart::UARTDevice, public PollingComponent {
   };
 
   uint8_t last_polling_command_ = 0;
-  PollingCommand used_polling_commands_[41];
+  PollingCommand used_polling_commands_[51];
 };
 
 }  // namespace apc_ups
