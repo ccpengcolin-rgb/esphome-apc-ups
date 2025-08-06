@@ -11,6 +11,9 @@
 namespace esphome {
 namespace apc_ups {
 
+// Buffer size for reading UPS responses
+#define APC_UPS_READ_BUFFER_LENGTH 256
+
 enum ENUMPollingCommand {
   POLLING_Y = 0,         // Enable smart mode
   POLLING_A = 1,         // Front panel test
@@ -62,6 +65,7 @@ enum ENUMPollingCommand {
   POLLING_LOWER_Z = 47,  // Reset to factory settings @TODO
   POLLING_9 = 48,        // Line quality
   POLLING_CTRL_A = 49,   // Model name @TODO
+  POLLING_Q2 = 50,       // Q2 command for extended data
 };
 struct PollingCommand {
   uint8_t *command;
