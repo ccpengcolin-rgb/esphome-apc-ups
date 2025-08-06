@@ -4,13 +4,27 @@
 namespace esphome {
 namespace apc_ups {
 
+// Helper function to extract substring (similar to VBScript mid)
+const char* mid(const char* str, int start, int length) {
+  // VBScript mid is 1-based, so adjust to 0-based
+  start = start - 1;
+  if (start < 0) start = 0;
+  if (start >= strlen(str)) return "";
+  if (length < 0) length = 0;
+  if (start + length > strlen(str)) length = strlen(str) - start;
+  static char buffer[APC_UPS_READ_BUFFER_LENGTH];
+  strncpy(buffer, str + start, length);
+  buffer[length] = '\0';
+  return buffer;
+}
+
 static const char *const TAG = "apc_ups";
 
 void ApcUps::setup() {
   this->state_ = STATE_IDLE;
   this->command_start_millis_ = 0;
-  //this->add_polling_command_("Y", POLLING_Y);
-  this->add_polling_command_("Q1\r", POLLING_Y);
+  this->add_polling_command_("Y", POLLING_Y);
+  this->add_polling_command_("Q2\r", POLLING_Q2);
 }
 
 void ApcUps::empty_uart_buffer_() {
@@ -195,6 +209,27 @@ void ApcUps::loop() {
         break;
       case POLLING_CTRL_A:
         this->publish_state_(this->model_name_, value_model_name_);
+        break;
+      case POLLING_Q2:
+        // Publish all Q2 command sensors
+        this->publish_state_(this->ups101_, value_ups101_);
+        this->publish_state_(this->ups113_, value_ups113_);
+        this->publish_state_(this->ups114_, value_ups114_);
+        this->publish_state_(this->ups102_, value_ups102_);
+        this->publish_state_(this->ups103_, value_ups103_);
+        this->publish_state_(this->ups115_, value_ups115_);
+        this->publish_state_(this->ups116_, value_ups116_);
+        this->publish_state_(this->ups104_, value_ups104_);
+        this->publish_state_(this->ups117_, value_ups117_);
+        this->publish_state_(this->ups118_, value_ups118_);
+        this->publish_state_(this->ups105_, value_ups105_);
+        this->publish_state_(this->ups106_, value_ups106_);
+        this->publish_state_(this->ups107_, value_ups107_);
+        this->publish_state_(this->ups108_, value_ups108_);
+        this->publish_state_(this->ups109_, value_ups109_);
+        this->publish_state_(this->ups110_, value_ups110_);
+        this->publish_state_(this->ups111_, value_ups111_);
+        this->publish_state_(this->ups112_, value_ups112_);
         break;
       default:
         ESP_LOGD(TAG, "Response not implemented");
@@ -404,6 +439,47 @@ void ApcUps::loop() {
         this->value_model_name_ = tmp;
         this->state_ = STATE_POLL_DECODED;
         break;
+      case POLLING_Q2:
+        ESP_LOGD(TAG, "Decode Q2");
+        // Parse Q2 command response according to the provided VBScript logic
+        if (strlen(tmp) > 10) {
+          // Extract and calculate each value
+          this->value_ups101_ = (atof(mid(tmp, 2, 3)) + atof(mid(tmp, 6, 1))) / 10.0f;
+          this->value_ups113_ = (atof(mid(tmp, 8, 3)) + atof(mid(tmp, 12, 1))) / 10.0f;
+          this->value_ups114_ = (atof(mid(tmp, 14, 3)) + atof(mid(tmp, 18, 1))) / 10.0f;
+          this->value_ups102_ = (atof(mid(tmp, 20, 3)) + atof(mid(tmp, 24, 1))) / 10.0f;
+          this->value_ups103_ = (atof(mid(tmp, 26, 3)) + atof(mid(tmp, 30, 1))) / 10.0f;
+          this->value_ups115_ = (atof(mid(tmp, 32, 3)) + atof(mid(tmp, 36, 1))) / 10.0f;
+          this->value_ups116_ = (atof(mid(tmp, 38, 3)) + atof(mid(tmp, 42, 1))) / 10.0f;
+          this->value_ups104_ = atof(mid(tmp, 44, 3)) / 1.0f;
+          this->value_ups117_ = atof(mid(tmp, 48, 3)) / 1.0f;
+          this->value_ups118_ = atof(mid(tmp, 52, 3)) / 1.0f;
+          this->value_ups105_ = (atof(mid(tmp, 56, 2)) + atof(mid(tmp, 59, 1))) / 10.0f;
+          this->value_ups106_ = (atof(mid(tmp, 61, 3)) + atof(mid(tmp, 65, 2))) / 10.0f;
+          this->value_ups107_ = (atof(mid(tmp, 67, 2)) + atof(mid(tmp, 70, 1))) / 10.0f;
+
+          // Parse binary status flags
+          char s = mid(tmp, 110, 1)[0];
+          this->value_ups108_ = (s == '1');  // 0: 市电正常, 1: 市电不正常
+
+          s = mid(tmp, 111, 1)[0];
+          this->value_ups109_ = (s == '1');  // 0: 电池正常, 1: 电池低电压
+
+          s = mid(tmp, 112, 1)[0];
+          this->value_ups110_ = (s == '1');  // 1: 旁路运行, 0: 主路运行
+
+          s = mid(tmp, 113, 1)[0];
+          this->value_ups111_ = (s == '1');  // 0: UPS正常, 1: UPS故障
+
+          s = mid(tmp, 114, 1)[0];
+          this->value_ups112_ = (s == '1');  // 0: 在线式, 1: 后备式
+
+          this->state_ = STATE_POLL_DECODED;
+        } else {
+          ESP_LOGW(TAG, "Q2 response too short: %s", tmp);
+          this->state_ = STATE_IDLE;
+        }
+        break;
       default:
         this->state_ = STATE_IDLE;
         break;
@@ -467,6 +543,26 @@ uint8_t ApcUps::check_incoming_length_(uint8_t length) {
   }
   return 0;
 }
+
+// Q2 command specific sensors
+APC_UPS_SENSOR(ups101, Q2, Q2, float)
+APC_UPS_SENSOR(ups113, Q2, Q2, float)
+APC_UPS_SENSOR(ups114, Q2, Q2, float)
+APC_UPS_SENSOR(ups102, Q2, Q2, float)
+APC_UPS_SENSOR(ups103, Q2, Q2, float)
+APC_UPS_SENSOR(ups115, Q2, Q2, float)
+APC_UPS_SENSOR(ups116, Q2, Q2, float)
+APC_UPS_SENSOR(ups104, Q2, Q2, float)
+APC_UPS_SENSOR(ups117, Q2, Q2, float)
+APC_UPS_SENSOR(ups118, Q2, Q2, float)
+APC_UPS_SENSOR(ups105, Q2, Q2, float)
+APC_UPS_SENSOR(ups106, Q2, Q2, float)
+APC_UPS_SENSOR(ups107, Q2, Q2, float)
+APC_UPS_BINARY_SENSOR(ups108, Q2, Q2)
+APC_UPS_BINARY_SENSOR(ups109, Q2, Q2)
+APC_UPS_BINARY_SENSOR(ups110, Q2, Q2)
+APC_UPS_BINARY_SENSOR(ups111, Q2, Q2)
+APC_UPS_BINARY_SENSOR(ups112, Q2, Q2)
 
 // send next command used
 uint8_t ApcUps::send_next_command_() {
